@@ -7,7 +7,6 @@ import pandas as pd
 def plot_distribution(df, variable, kde = True, bw_adjust=1.5, bins=40):
     """
     Función para graficar la distribución de una variable numérica y un boxplot para identificar la presencia de outliers.
-    
     Muestra también estadísticas descriptivas: cuartiles (Q1, mediana, Q3), media y desviación estándar.
     
     :param df: conjunto de datos numéricos
@@ -43,10 +42,12 @@ def plot_distribution(df, variable, kde = True, bw_adjust=1.5, bins=40):
     
     # Añadir leyenda para identificar los valores de los ejes
     ax1.legend()
+
     # Boxplot a la derecha
     sns.boxplot(data=df, y=variable, ax=ax2)
     ax2.set_title(f'Boxplot de {variable}')
     ax2.grid(alpha=0.4)
+
     fig.tight_layout()
     plt.show()
 
@@ -134,24 +135,61 @@ def visualize_discrete_features(df, variables):
     n_rows = math.ceil(n_vars / n_cols)
 
     # Estilo del gráfico (figura y ejes)
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(16, 4 * n_rows))
-    axes = axes.flatten()
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=(16, 4 * n_rows))
+    axs = axs.flatten()
 
     # Se generan los gráficos de líneas para cada variable
     for i in range(n_vars):
         var = variables[i]
         counts = df[var].value_counts().sort_index()
 
-        axes[i].plot(counts.index, counts.values, color='steelblue')
-        axes[i].set_title(f'Distribución de {var} (frecuencia)', fontsize=12, fontweight='bold')
-        axes[i].set_xlabel(var, fontsize=10)
-        axes[i].set_ylabel('Frecuencia', fontsize=10)
-        axes[i].grid(alpha=0.4)
+        axs[i].plot(counts.index, counts.values, color='steelblue')
+        axs[i].set_title(f'Distribución de {var} (frecuencia)', fontsize=12, fontweight='bold')
+        axs[i].set_xlabel(var, fontsize=10)
+        axs[i].set_ylabel('Frecuencia', fontsize=10)
+        axs[i].grid(alpha=0.4)
 
     # Eliminar ejes vacíos si hay un número impar de variables
-    for j in range(n_vars, len(axes)):
-        fig.delaxes(axes[j])
+    for j in range(n_vars, len(axs)):
+        fig.delaxs(axs[j])
 
     # Ajustar espacios
     fig.tight_layout(w_pad=3, h_pad=3)
+    plt.show()
+
+def plot_numeric_hist_grid(df, cols=4):
+    """
+    Crea un cuadro resumen con histogramas para todas las variables numéricas del DataFrame.
+
+    :param df: DataFrame de pandas
+    :param bins: número de bins para cada histograma
+    :param cols: número de columnas en el grid
+    :param kde: si True, superpone curva KDE
+    :param sharex: compartir eje X entre subplots
+    :param sharey: compartir eje Y entre subplots
+    :return: None
+    """
+    num_df = df.select_dtypes(include=np.number)
+    if num_df.shape[1] == 0:
+        raise ValueError("El DataFrame no contiene columnas numéricas")
+
+    variables = list(num_df.columns)
+    n_vars = len(variables)
+    n_cols = max(1, int(cols))
+    n_rows = int(np.ceil(n_vars / n_cols))
+
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=(4*n_cols, 3*n_rows))
+    axs = np.array(axs).flatten()
+
+    for i, var in enumerate(variables):
+        ax = axs[i]
+        sns.histplot(data=num_df, x=var, bins=30, ax=ax)
+        ax.set_title(var)
+        ax.set_ylabel("Count")
+        ax.grid(alpha=0.3)
+    
+    for j in range(n_vars, len(axs)):
+        fig.delaxes(axs[j])
+
+    fig.tight_layout()
     plt.show()
