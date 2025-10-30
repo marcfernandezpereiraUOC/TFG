@@ -3,15 +3,17 @@ import seaborn as sns
 import numpy as np
 
 
-def plot_distribution(df, variable):
+def plot_distribution(df, variable, bw_adjust=1.5, bins=40):
     """
-    Función para graficar, por un lado, la distribución de una variable y los cuartiles (izquierda)
-    y, por otro lado, un boxplot (derecha) para identificar la presencia de outliers.
+    Función para graficar la distribución de una variable numérica y un boxplot para identificar la presencia de outliers.
+    
     Muestra también estadísticas descriptivas: cuartiles (Q1, mediana, Q3), media y desviación estándar.
     
-    Parameters:
-    - df: conjunto de datos numéricos
-    - variable: nombre de la variable a graficar
+    :param df: conjunto de datos numéricos
+    :param variable: nombre de la variable a graficar
+    :param bins: número de bins para el histograma
+    :param bw_adjust: ajuste del ancho de banda para la densidad kernel
+    :return: None
     """
     # Crear una figura con dos subplots en horizontal: histograma (izquierda, 75% del ancho) y boxplot (derecha, 25% del ancho)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5), width_ratios=[3, 1])
@@ -19,7 +21,7 @@ def plot_distribution(df, variable):
     sns.set_style("whitegrid")
 
     # Histograma a la izquierda
-    sns.histplot(data=df, x=variable, bins=40, kde=True, ax=ax1)
+    sns.histplot(data=df, x=variable, bins=bins, kde=True, ax=ax1, kde_kws=dict(bw_adjust=bw_adjust))
     ax1.set_title(f'Distribución de {variable}')
     ax1.grid(alpha=0.4)
     
@@ -37,12 +39,64 @@ def plot_distribution(df, variable):
     ax1.axvline(mean, color='#9467bd', linestyle='-', linewidth=2, alpha=0.8, label='Media')
     ax1.axvline(mean - std, color='#8c564b', linestyle=':', alpha=0.7, label='Media ± σ')
     ax1.axvline(mean + std, color='#8c564b', linestyle=':', alpha=0.7)
+    
     # Añadir leyenda para identificar los valores de los ejes
     ax1.legend()
-    
     # Boxplot a la derecha
     sns.boxplot(data=df, y=variable, ax=ax2)
     ax2.set_title(f'Boxplot de {variable}')
     ax2.grid(alpha=0.4)
     fig.tight_layout()
     plt.show()
+
+def get_skewness_coeficient(df, variable):
+    """
+    Calcula el coeficiente de asimetría (skewness) de una distribución usando el método basado en momentos (Fisher–Pearson).
+    # Referencia (Fisher–Pearson sample skewness): https://en.wikipedia.org/wiki/Skewness#Sample_skewness
+
+    :param distribution :  Lista o array con los valores de la variable numérica.
+    :param variable: nombre de la variable a calcular el coeficiente de asimetría
+    :return: skewness : float
+    Valor del coeficiente de asimetría:
+        > 0  -> sesgo positivo (cola derecha)
+        < 0  -> sesgo negativo (cola izquierda)
+        = 0  -> distribución simétrica
+    """
+    # Validar que la variable exista y sea numérica
+    if variable not in df.columns:
+        raise KeyError(f"La variable '{variable}' no existe en el DataFrame")
+    if not np.issubdtype(df[variable].dtype, np.number):
+        raise ValueError(f"La variable {variable} no es numérica")
+    
+    # Calcular el número de observaciones, la media y la desviación estándar
+    n = len(df[variable])
+    mean_value = np.mean(df[variable])
+    std_value = np.std(df[variable])
+    # Formula para calcular el coeficiente de asimetría
+    skewness_value = (n / ((n - 1) * (n - 2))) * (np.sum(((df[variable] - mean_value) / std_value) ** 3))
+
+    return skewness_value
+
+def get_kurtosis_coeficient(df, variable):
+    """
+    Calcula el coeficiente de curtosis (kurtosis) de una distribución usando el método basado en momentos (Fisher–Pearson).
+    Fórmula extraída de: https://en.wikipedia.org/wiki/Kurtosis 
+    
+    :param distribution :  Lista o array con los valores de la variable numérica.
+    :param variable: nombre de la variable a calcular el coeficiente de curtosis
+    :return: kurtosis : valor del coeficiente de curtosis
+    Valor del coeficiente de curtosis:
+    # Validar que la variable exista y sea numérica
+    """
+    # Validar que la variable exista y sea numérica
+    if variable not in df.columns:
+        raise KeyError(f"La variable '{variable}' no existe en el DataFrame")
+    if not np.issubdtype(df[variable].dtype, np.number):
+        raise ValueError(f"La variable {variable} no es numérica")
+    n = len(df[variable])
+    mean = np.mean(df[variable])
+    std = np.std(df[variable])
+
+    kurtosis = (1 / n) * sum(((df[variable] - mean) / std) ** 4) - 3
+
+    return kurtosis
