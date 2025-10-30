@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import pandas as pd
 
 
-def plot_distribution(df, variable, bw_adjust=1.5, bins=40):
+def plot_distribution(df, variable, kde = True, bw_adjust=1.5, bins=40):
     """
     Función para graficar la distribución de una variable numérica y un boxplot para identificar la presencia de outliers.
     
@@ -21,7 +22,7 @@ def plot_distribution(df, variable, bw_adjust=1.5, bins=40):
     sns.set_style("whitegrid")
 
     # Histograma a la izquierda
-    sns.histplot(data=df, x=variable, bins=bins, kde=True, ax=ax1, kde_kws=dict(bw_adjust=bw_adjust))
+    sns.histplot(data=df, x=variable, bins=bins, kde=kde, ax=ax1, kde_kws=dict(bw_adjust=bw_adjust))
     ax1.set_title(f'Distribución de {variable}')
     ax1.grid(alpha=0.4)
     
@@ -100,3 +101,57 @@ def get_kurtosis_coeficient(df, variable):
     kurtosis = (1 / n) * sum(((df[variable] - mean) / std) ** 4) - 3
 
     return kurtosis
+
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+import math
+
+def visualize_discrete_features(df, variables):
+    """
+    Visualiza una o varias variables discretas/categóricas en subplots usando gráficos de líneas de frecuencia ordenados por índice de categoría.
+
+    - Acepta una cadena (una sola variable) o una lista de nombres de columnas.
+    - Organiza automáticamente los subplots en un grid de 2 columnas por fila.
+
+    :param df: Conjunto de datos con las variables discretas/categóricas.
+    :param variables: nombre de columna (str) o lista de nombres (list[str]) a visualizar.
+    :return: None
+    """
+    # Si se pasa una sola variable, se convierte en lista
+    if isinstance(variables, str):
+        variables = [variables]
+
+    # Se comprueba que las variables existan en el conjunto de datos
+    for var in variables:
+        if var not in df.columns:
+            raise KeyError(f"La variable '{var}' no existe en el DataFrame")
+
+    n_vars = len(variables)
+
+    # Se calculan filas y columnas (máximo 2 columnas por fila)
+    n_cols = 2
+    n_rows = math.ceil(n_vars / n_cols)
+
+    # Estilo del gráfico (figura y ejes)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(16, 4 * n_rows))
+    axes = axes.flatten()
+
+    # Se generan los gráficos de líneas para cada variable
+    for i in range(n_vars):
+        var = variables[i]
+        counts = df[var].value_counts().sort_index()
+
+        axes[i].plot(counts.index, counts.values, color='steelblue')
+        axes[i].set_title(f'Distribución de {var} (frecuencia)', fontsize=12, fontweight='bold')
+        axes[i].set_xlabel(var, fontsize=10)
+        axes[i].set_ylabel('Frecuencia', fontsize=10)
+        axes[i].grid(alpha=0.4)
+
+    # Eliminar ejes vacíos si hay un número impar de variables
+    for j in range(n_vars, len(axes)):
+        fig.delaxes(axes[j])
+
+    # Ajustar espacios
+    fig.tight_layout(w_pad=3, h_pad=3)
+    plt.show()
